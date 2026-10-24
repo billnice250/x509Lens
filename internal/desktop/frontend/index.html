@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>X509 Lens</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app" style="--wails-drop-target: drop">
+      <header class="toolbar">
+        <div class="file">
+          <span class="file-icon" aria-hidden="true"
+            ><img class="logo-light" src="logo-light.png" alt="" /><img
+              class="logo-dark"
+              src="logo-dark.png"
+              alt=""
+          /></span>
+          <div>
+            <strong id="filename">X509 Lens</strong
+            ><small id="filemeta">Certificate viewer</small>
+          </div>
+        </div>
+        <div class="toolbar-actions">
+          <button id="open">Open…</button
+          ><button id="server">Server…</button
+          ><button id="export" disabled>Export…</button
+          ><button
+            id="settings"
+            aria-label="Viewer settings"
+            title="Viewer settings"
+          >
+            ⚙
+          </button>
+        </div>
+      </header>
+      <div id="objectbar" class="objectbar" hidden>
+        <label for="objects">Object in this file</label
+        ><select id="objects"></select
+        ><button id="back" hidden>Back to file</button>
+      </div>
+      <nav
+        class="tabs"
+        role="tablist"
+        aria-label="Certificate views"
+        hidden
+        id="tabs"
+      >
+        <button
+          id="tab-general"
+          role="tab"
+          aria-selected="true"
+          aria-controls="panel"
+          data-tab="general"
+        >
+          General
+        </button>
+        <button
+          id="tab-details"
+          role="tab"
+          aria-selected="false"
+          aria-controls="panel"
+          data-tab="details"
+        >
+          Details
+        </button>
+        <button
+          id="tab-asn1"
+          role="tab"
+          aria-selected="false"
+          aria-controls="panel"
+          data-tab="asn1"
+        >
+          ASN.1
+        </button>
+        <button
+          id="tab-missing"
+          role="tab"
+          aria-selected="false"
+          aria-controls="panel"
+          data-tab="missing"
+        >
+          Missing
+        </button>
+        <button
+          id="tab-chain"
+          role="tab"
+          aria-selected="false"
+          aria-controls="panel"
+          data-tab="chain"
+        >
+          Certification Path
+        </button>
+      </nav>
+      <main id="panel" role="tabpanel" tabindex="0">
+        <div class="welcome">
+          <div class="certificate-symbol" aria-hidden="true">
+            <svg viewBox="0 0 72 80">
+              <path d="M14 7h33l12 12v53H14z" />
+              <path d="M47 7v14h12M24 29h25M24 37h19M24 45h11" />
+              <circle cx="45" cy="57" r="11" />
+              <path d="m40 57 4 4 7-8M40 67l-2 10 7-4 6 4-2-10" />
+            </svg>
+          </div>
+          <h1>A closer look at your certificate.</h1>
+          <p>
+            Open a certificate, CSR, identity, bundle, CRL, or key.<br />One file.
+            Everything you need to review it.
+          </p>
+          <button class="primary" id="welcome-open">Open a file…</button
+          ><small>or drop a file anywhere in this window</small>
+        </div>
+      </main>
+      <div id="notice" class="notice" role="status" hidden></div>
+      <footer>
+        <span id="status"
+          ><span class="status-dot"></span> Ready to open a file</span
+        >
+        <div>
+          <button id="unlock" hidden>Unlock…</button
+          ><button id="verify" disabled>Verify online</button>
+        </div>
+      </footer>
+    </div>
+    <dialog id="password-dialog">
+      <form id="password-form">
+        <div class="dialog-symbol">⚿</div>
+        <h2>Unlock this file</h2>
+        <p id="password-description">
+          Enter the password to inspect this identity or key.
+        </p>
+        <label for="password">Password</label
+        ><input id="password" type="password" autocomplete="off" autofocus />
+        <p id="password-error" class="error" role="alert"></p>
+        <div class="dialog-actions">
+          <button type="button" id="password-cancel">Cancel</button
+          ><button type="submit" class="primary">Unlock</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="server-dialog">
+      <form id="server-form">
+        <h2>Inspect TLS server</h2>
+        <p>Download the certificate chain presented during a TLS handshake.</p>
+        <label for="server-endpoint">HTTPS endpoint</label>
+        <input id="server-endpoint" type="text" placeholder="example.com or https://example.com:443" autocomplete="off" required />
+        <p class="hint">Private and loopback destinations are blocked. No HTTP request is sent.</p>
+        <div class="dialog-actions">
+          <button type="button" id="server-cancel">Cancel</button><button type="submit" class="primary">Connect</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="export-dialog">
+      <form id="export-form">
+        <h2>Export public data</h2>
+        <p>Save a copy of the selected object or certification path.</p>
+        <label for="export-format">Format</label
+        ><select id="export-format">
+          <option value="pem">PEM (.pem)</option>
+          <option value="der">DER (.der)</option>
+          <option value="p7b">PKCS#7 certificate bundle (.p7b)</option>
+          <option value="fingerprint">
+            SHA-256 fingerprint (.txt)
+          </option></select
+        ><label for="export-scope">Include</label
+        ><select id="export-scope">
+          <option value="object">Selected object only</option>
+          <option value="intermediates">Leaf and intermediates</option>
+          <option value="chain">Complete certification path</option></select
+        ><label for="export-path">Certification path</label
+        ><select id="export-path"></select>
+        <div class="dialog-actions">
+          <button type="button" id="export-cancel">Cancel</button
+          ><button class="primary" type="submit">Save…</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="settings-dialog">
+      <h2>Viewer settings</h2>
+      <label for="theme">Appearance</label
+      ><select id="theme">
+        <option value="auto">Follow system</option>
+        <option value="light">Light</option>
+        <option value="dark">Dark</option></select
+      ><label class="check"
+        ><input id="online" type="checkbox" checked /> Allow online
+        verification</label
+      >
+      <p class="hint">
+        Files open with local checks. “Verify online” can retrieve issuers and
+        revocation information. Disable this option to keep verification
+        offline.
+      </p>
+      <p class="hint">
+        X509 Lens reviews files. It does not install certificates into your
+        system trust store.
+      </p>
+      <div class="dialog-actions">
+        <button id="settings-close" class="primary">Done</button>
+      </div>
+    </dialog>
+    <script src="app.js"></script>
+  </body>
+</html>

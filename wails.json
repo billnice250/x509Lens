@@ -1,0 +1,111 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "X509 Lens",
+  "outputfilename": "X509Lens",
+  "build:tags": "desktop",
+  "frontend:dir": "internal/desktop/frontend",
+  "frontend:install": "",
+  "frontend:build": "",
+  "author": {
+    "name": "X509 Lens"
+  },
+  "info": {
+    "companyName": "X509 Lens",
+    "productName": "X509 Lens",
+    "productVersion": "1.0.0",
+    "comments": "Certificate and cryptographic object viewer",
+    "fileAssociations": [
+      {
+        "ext": "cer",
+        "name": "X.509 Certificate",
+        "description": "X.509 Certificate",
+        "role": "Viewer",
+        "iconName": "appicon"
+      },
+      {
+        "ext": "crt",
+        "name": "X.509 Certificate",
+        "description": "X.509 Certificate",
+        "role": "Viewer",
+        "iconName": "appicon"
+      },
+      {
+        "ext": "csr",
+        "name": "Certificate Signing Request",
+        "description": "PKCS#10 Certificate Signing Request",
+        "role": "Viewer",
+        "iconName": "appicon"
+      },
+      {
+        "ext": "req",
+        "name": "Certificate Signing Request",
+        "description": "PKCS#10 Certificate Signing Request",
+        "role": "Viewer",
+        "iconName": "appicon"
+      },
+      {
+        "ext": "pem",
+        "name": "PEM Object",
+        "description": "PEM Certificate or Key",
+        "role": "Viewer",
+        "iconName": "appicon"
+      },
+      {
+        "ext": "der",
+        "name": "DER Object",
+        "description": "DER Certificate or Key",
+        "role": "Viewer",
+        "iconName": "appicon"
+      },
+      {
+        "ext": "p7b",
+        "name": "PKCS7 Bundle",
+        "description": "PKCS7 Certificate Bundle",
+        "role": "Viewer",
+        "iconName": "appicon"
+      },
+      {
+        "ext": "p7c",
+        "name": "PKCS7 Bundle",
+        "description": "PKCS7 Certificate Bundle",
+        "role": "Viewer",
+        "iconName": "appicon"
+      },
+      {
+        "ext": "p12",
+        "name": "PKCS12 Identity",
+        "description": "PKCS12 Identity",
+        "role": "Viewer",
+        "iconName": "appicon"
+      },
+      {
+        "ext": "pfx",
+        "name": "PKCS12 Identity",
+        "description": "PKCS12 Identity",
+        "role": "Viewer",
+        "iconName": "appicon"
+      },
+      {
+        "ext": "crl",
+        "name": "Certificate Revocation List",
+        "description": "Certificate Revocation List",
+        "role": "Viewer",
+        "iconName": "appicon"
+      },
+      {
+        "ext": "key",
+        "name": "Cryptographic Key",
+        "description": "Cryptographic Key",
+        "role": "Viewer",
+        "iconName": "appicon"
+      },
+      {
+        "ext": "pub",
+        "name": "Public Key",
+        "description": "Public Key",
+        "role": "Viewer",
+        "iconName": "appicon"
+      }
+    ]
+  }
+}

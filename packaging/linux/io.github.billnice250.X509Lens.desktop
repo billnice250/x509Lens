@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=X509 Lens
+GenericName=Certificate Viewer
+Comment=Inspect certificates, chains, CSRs, CRLs, bundles, and keys
+Exec=x509lens %f
+Icon=io.github.billnice250.X509Lens
+Terminal=false
+Categories=Utility;Security;
+MimeType=application/pkix-cert;application/x-x509-ca-cert;application/pkix-crl;application/x-pkcs7-certificates;application/x-pkcs12;application/x-pem-file;application/x-x509lens-object;
+StartupWMClass=x509lens

@@ -1,0 +1,175 @@
+name: Verify and release
+on: [push, pull_request]
+permissions:
+  contents: write
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go vet ./...
+      - run: go test -race ./...
+  desktop:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            arch: arm64
+            tags: desktop
+          - os: macos-15-intel
+            arch: amd64
+            tags: desktop
+          - os: ubuntu-24.04
+            arch: amd64
+            tags: desktop,webkit2_41
+          - os: ubuntu-24.04-arm
+            arch: arm64
+            tags: desktop,webkit2_41
+          - os: windows-latest
+            arch: amd64
+            tags: desktop
+          - os: windows-latest
+            arch: arm64
+            tags: desktop
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev pkg-config
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install nsis --yes --no-progress
+          'C:\Program Files (x86)\NSIS' | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - run: go vet -tags '${{ matrix.tags }}' ./...
+      - run: go test -race -tags '${{ matrix.tags }}' ./...
+      - if: runner.os != 'Windows'
+        run: python3 scripts/build_desktop.py --arch '${{ matrix.arch }}'
+      - if: runner.os == 'Windows'
+        run: python scripts/build_desktop.py --arch '${{ matrix.arch }}' --installer
+      - name: Verify silent Windows install and uninstall
+        if: runner.os == 'Windows' && matrix.arch == 'amd64'
+        shell: pwsh
+        run: |
+          $installer = Get-Item 'dist/desktop/X509Lens-*-windows-amd64-setup.exe'
+          $process = Start-Process -FilePath $installer.FullName -ArgumentList '/S' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Silent installer exited with $($process.ExitCode)" }
+
+          $uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\X509Lens'
+          $installed = Get-ItemProperty $uninstallKey
+          if ($installed.DisplayName -ne 'X509 Lens') { throw 'Installed-app DisplayName is missing or incorrect' }
+          if ([string]::IsNullOrWhiteSpace($installed.Publisher)) { throw 'Installed-app Publisher is missing' }
+          if ($installed.DisplayVersion -ne '1.0.0') { throw 'Installed-app DisplayVersion is missing or incorrect' }
+
+          $uninstaller = Join-Path $env:LOCALAPPDATA 'Programs\X509Lens\Uninstall.exe'
+          $process = Start-Process -FilePath $uninstaller -ArgumentList '/S' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Silent uninstaller exited with $($process.ExitCode)" }
+          if (Test-Path $uninstallKey) { throw 'Uninstaller left the Installed apps registry entry behind' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: x509-lens-${{ matrix.os }}-${{ matrix.arch }}
+          path: dist/desktop/
+      - uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') && runner.os != 'macOS'
+        with:
+          files: dist/desktop/X509Lens-*
+
+  macos-release:
+    name: Signed macOS release (${{ matrix.arch }})
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            arch: arm64
+          - os: macos-15-intel
+            arch: amd64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Import Developer ID certificate
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.MACOS_BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.MACOS_BUILD_CERTIFICATE_PASSWORD }}
+        run: |
+          CERTIFICATE_PATH="$RUNNER_TEMP/developer-id.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/x509-lens-signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+
+          printf '%s' "$BUILD_CERTIFICATE_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH"
+
+          IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | sed -n 's/.*"\(Developer ID Application:.*\)"/\1/p' | head -1)"
+          test -n "$IDENTITY"
+          echo "MAC_APP_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+          echo "SIGNING_KEYCHAIN=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+      - name: Build signed application
+        run: python3 scripts/build_desktop.py --arch '${{ matrix.arch }}'
+      - name: Verify signature
+        run: |
+          codesign --verify --deep --strict --verbose=2 "build/bin/X509 Lens.app"
+          codesign -d --verbose=2 "build/bin/X509 Lens.app"
+      - name: Notarize and staple disk image
+        env:
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+          APPLE_API_PRIVATE_KEY: ${{ secrets.APPLE_API_PRIVATE_KEY }}
+        run: |
+          API_KEY_PATH="$RUNNER_TEMP/AuthKey_${APPLE_API_KEY_ID}.p8"
+          printf '%s' "$APPLE_API_PRIVATE_KEY" > "$API_KEY_PATH"
+          chmod 600 "$API_KEY_PATH"
+          DMGS=(dist/desktop/X509Lens-*-macos-${{ matrix.arch }}.dmg)
+          test "${#DMGS[@]}" -eq 1
+          DMG="${DMGS[0]}"
+          xcrun notarytool submit "$DMG" \
+            --key "$API_KEY_PATH" \
+            --key-id "$APPLE_API_KEY_ID" \
+            --issuer "$APPLE_API_ISSUER_ID" \
+            --wait
+          xcrun stapler staple "$DMG"
+          xcrun stapler validate "$DMG"
+          shasum -a 256 dist/desktop/X509Lens-* > "dist/desktop/SHA256SUMS-macos-${{ matrix.arch }}"
+      - name: Remove signing keychain
+        if: always()
+        run: security delete-keychain "$SIGNING_KEYCHAIN" 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: x509-lens-signed-macos-${{ matrix.arch }}
+          if-no-files-found: error
+          path: |
+            dist/desktop/X509Lens-*.dmg
+            dist/desktop/X509Lens-*.zip
+            dist/desktop/SHA256SUMS-macos-${{ matrix.arch }}
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/desktop/X509Lens-*.dmg
+            dist/desktop/X509Lens-*.zip
+            dist/desktop/SHA256SUMS-macos-${{ matrix.arch }}

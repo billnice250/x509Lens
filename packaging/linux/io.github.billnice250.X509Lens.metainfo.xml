@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.billnice250.X509Lens</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <name>X509 Lens</name>
+  <summary>Inspect X.509 certificates and cryptographic objects</summary>
+  <description>
+    <p>X509 Lens is a desktop viewer for certificates, certificate chains, CSRs, CRLs, PKCS#7 and PKCS#12 bundles, and public key metadata.</p>
+    <p>It compares server-presented chains with host trust resolution and provides fingerprints, SPKI details, extension decoding, and ASN.1 views.</p>
+  </description>
+  <launchable type="desktop-id">io.github.billnice250.X509Lens.desktop</launchable>
+  <url type="homepage">https://github.com/billnice250/certview</url>
+  <url type="bugtracker">https://github.com/billnice250/certview/issues</url>
+  <provides><binary>x509lens</binary></provides>
+  <releases><release version="1.0.0" date="2026-10-22"/></releases>
+  <content_rating type="oars-1.1"/>
+</component>

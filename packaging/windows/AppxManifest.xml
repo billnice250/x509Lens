@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities">
+  <Identity Name="{{IDENTITY_NAME}}" Publisher="{{PUBLISHER}}" Version="1.0.0.0" ProcessorArchitecture="{{ARCH}}"/>
+  <Properties><DisplayName>X509 Lens</DisplayName><PublisherDisplayName>{{PUBLISHER_DISPLAY_NAME}}</PublisherDisplayName><Logo>Assets\StoreLogo.png</Logo></Properties>
+  <Resources><Resource Language="en-us"/></Resources>
+  <Dependencies><TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26100.0"/></Dependencies>
+  <Applications><Application Id="X509Lens" Executable="X509Lens.exe" EntryPoint="Windows.FullTrustApplication">
+    <uap:VisualElements DisplayName="X509 Lens" Description="Certificate and cryptographic object viewer" BackgroundColor="transparent" Square44x44Logo="Assets\Square44x44Logo.png" Square150x150Logo="Assets\Square150x150Logo.png"/>
+    <Extensions><uap:Extension Category="windows.fileTypeAssociation"><uap:FileTypeAssociation Name="cryptographic-objects"><uap:SupportedFileTypes><uap:FileType>.cer</uap:FileType><uap:FileType>.crt</uap:FileType><uap:FileType>.csr</uap:FileType><uap:FileType>.req</uap:FileType><uap:FileType>.pem</uap:FileType><uap:FileType>.der</uap:FileType><uap:FileType>.p7b</uap:FileType><uap:FileType>.p12</uap:FileType><uap:FileType>.pfx</uap:FileType><uap:FileType>.crl</uap:FileType><uap:FileType>.key</uap:FileType><uap:FileType>.pub</uap:FileType></uap:SupportedFileTypes></uap:FileTypeAssociation></uap:Extension></Extensions>
+  </Application></Applications>
+  <Capabilities><Capability Name="internetClient"/><rescap:Capability Name="runFullTrust"/></Capabilities>
+</Package>

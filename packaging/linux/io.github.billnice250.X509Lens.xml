@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+ <mime-type type="application/x-x509lens-object">
+  <comment>Certificate or cryptographic object</comment>
+  <glob pattern="*.der"/><glob pattern="*.csr"/><glob pattern="*.req"/><glob pattern="*.p7c"/><glob pattern="*.key"/><glob pattern="*.pub"/>
+ </mime-type>
+</mime-info>
